@@ -61,4 +61,4 @@ python client.py
 
 ## 许可证
 
-此项目基于 MIT 许可证开源，详见 [LICENSE](LICENSE) 文件。
+此项目基于 GPL-3 许可证开源，详见 [LICENSE](LICENSE) 文件。
