@@ -5,9 +5,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from chat_core import ChatCore
 
 class ChatWindow(QtWidgets.QWidget):
-    """
-    ChatWindow 类负责创建聊天界面和处理用户交互。
-    """
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Secure Chat")
@@ -83,9 +80,6 @@ class ChatWindow(QtWidgets.QWidget):
         self.chat_history = []
 
     def start_chat(self, mode, ip, port):
-        """
-        开始聊天，初始化核心模块并连接信号。
-        """
         # 创建核心模块实例
         self.chat_core = ChatCore(mode, ip, port)
         # 连接信号到槽函数
@@ -93,9 +87,7 @@ class ChatWindow(QtWidgets.QWidget):
         self.chat_core.status_signal.connect(self.update_status)
 
     def display_message(self, message_info):
-        """
-        显示消息，在聊天界面中添加消息气泡。
-        """
+        # 在聊天显示区域添加消息
         message = message_info['message']
         timestamp = message_info['timestamp']
         sender = message_info['sender']
@@ -144,24 +136,16 @@ class ChatWindow(QtWidgets.QWidget):
         })
 
     def update_status(self, status):
-        """
-        更新状态标签，显示当前状态信息。
-        """
+        # 更新状态标签
         self.status_label.setText(f"状态: {status}")
 
     def send_message(self):
-        """
-        发送消息，获取输入框的内容并调用核心模块发送。
-        """
         message_text = self.message_input.toPlainText().strip()
         if message_text:
             self.chat_core.send_message(message_text)
             self.message_input.clear()
 
     def eventFilter(self, obj, event):
-        """
-        事件过滤器，用于捕获键盘事件，实现回车发送消息和Shift+Enter换行。
-        """
         if obj == self.message_input:
             if event.type() == QtCore.QEvent.KeyPress:
                 if event.key() == QtCore.Qt.Key_Return and not event.modifiers() & QtCore.Qt.ShiftModifier:
@@ -176,9 +160,7 @@ class ChatWindow(QtWidgets.QWidget):
         return super().eventFilter(obj, event)
 
     def export_chat(self):
-        """
-        导出聊天记录，将聊天内容保存为文本文件。
-        """
+        # 导出聊天记录到文件
         filepath, _ = QtWidgets.QFileDialog.getSaveFileName(self, "保存聊天记录", "", "Text Files (*.txt);;All Files (*)")
         if filepath:
             try:
@@ -191,9 +173,6 @@ class ChatWindow(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.warning(self, "导出失败", f"聊天记录导出失败：{e}")
 
     def closeEvent(self, event):
-        """
-        窗口关闭事件，关闭核心模块。
-        """
         if self.chat_core:
             self.chat_core.close()
         event.accept()
