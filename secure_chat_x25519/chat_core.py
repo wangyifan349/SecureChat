@@ -13,9 +13,6 @@ from Crypto.Cipher import ChaCha20_Poly1305  # 加密算法
 from PyQt5.QtCore import QObject, pyqtSignal
 
 class ChatCore(QObject):
-    """
-    ChatCore 类负责处理网络通信、加密解密和消息传递。
-    """
     # 定义信号，用于与GUI通信
     message_signal = pyqtSignal(dict)
     status_signal = pyqtSignal(str)
@@ -35,9 +32,6 @@ class ChatCore(QObject):
         self.network_thread.start()
 
     def run(self):
-        """
-        主运行函数，负责建立连接和进行密钥交换。
-        """
         try:
             if self.mode == 'server':
                 self.start_server()  # 启动服务器模式
@@ -55,9 +49,6 @@ class ChatCore(QObject):
             self.running = False
 
     def start_server(self):
-        """
-        启动服务器，监听连接。
-        """
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 创建监听套接字
         listener.bind((self.ip, self.port))  # 绑定IP和端口
         listener.listen(1)  # 开始监听
@@ -67,24 +58,15 @@ class ChatCore(QObject):
         self.sock = conn  # 使用连接套接字
 
     def start_client(self):
-        """
-        启动客户端，连接到服务器。
-        """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 创建套接字
         self.sock.connect((self.ip, self.port))  # 连接到服务器
         self.status_signal.emit(f"[*] Connected to {self.ip}:{self.port}")
 
     def perform_handshake(self):
-        """
-        执行密钥交换，建立安全通信通道。
-        """
         self.rx_key, self.tx_key = self.do_handshake(self.sock, is_server=(self.mode == 'server'))  # 执行密钥交换
 
     # 辅助函数
     def recv_exact(self, sock, nbytes):
-        """
-        接收指定字节数的数据。
-        """
         buf = b''  # 接收缓冲区
         while len(buf) < nbytes:
             chunk = sock.recv(nbytes - len(buf))  # 接收数据
@@ -94,16 +76,10 @@ class ChatCore(QObject):
         return buf
 
     def send_packet(self, sock, data: bytes):
-        """
-        发送数据包，包含数据长度和实际数据。
-        """
         length = len(data).to_bytes(4, 'big')  # 数据长度
         sock.sendall(length + data)  # 发送数据
 
     def recv_packet(self, sock) -> bytes:
-        """
-        接收数据包，先接收数据长度，再接收实际数据。
-        """
         hdr = self.recv_exact(sock, 4)  # 接收数据头
         if not hdr:
             return None
@@ -111,9 +87,6 @@ class ChatCore(QObject):
         return self.recv_exact(sock, length)  # 接收完整数据
 
     def do_handshake(self, sock, is_server: bool):
-        """
-        执行X25519密钥交换，生成共享密钥。
-        """
         priv_key = PrivateKey.generate()  # 生成私钥
         pub_key = priv_key.public_key  # 生成公钥
 
@@ -147,9 +120,6 @@ class ChatCore(QObject):
         return rx_key, tx_key
 
     def receiver_loop(self):
-        """
-        接收消息的循环，处理接收到的加密数据。
-        """
         while self.running:
             try:
                 packet = self.recv_packet(self.sock)  # 接收数据包
@@ -190,9 +160,6 @@ class ChatCore(QObject):
                 self.status_signal.emit(f"[!] Received non-JSON data.")
 
     def send_message(self, message_text):
-        """
-        发送消息，进行加密并通过网络发送。
-        """
         if not self.running or not self.sock:
             self.status_signal.emit("[!] Connection is not established.")
             return
@@ -229,9 +196,6 @@ class ChatCore(QObject):
             self.status_signal.emit(f"[!] Failed to send message: {e}")
 
     def close(self):
-        """
-        关闭连接，停止运行。
-        """
         self.running = False
         if self.sock:
             self.sock.close()  # 关闭套接字
