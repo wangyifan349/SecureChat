@@ -1,0 +1,98 @@
+import sys
+import getpass
+from bip_utils import (
+    Bip39MnemonicGenerator, Bip39SeedGenerator, Bip39WordsNum, Bip84, Bip84Coins, Bip44, Bip44Coins
+)
+from web3 import Web3
+
+def generate_mnemonic():
+    # 生成新的 12 个单词的助记词
+    mnemonic = Bip39MnemonicGenerator().FromWordsNumber(Bip39WordsNum.WORDS_NUM_12)
+    print("\n你的新助记词如下，请妥善保管（不要泄露给他人）：\n")
+    print(mnemonic)
+    return mnemonic
+
+def get_seed_from_mnemonic(mnemonic, passphrase=''):
+    # 从助记词生成种子
+    seed_bytes = Bip39SeedGenerator(mnemonic).Generate(passphrase)
+    return seed_bytes
+
+def generate_bitcoin_addresses(seed_bytes, account_index=0, num_addresses=1):
+    # 创建 BIP84 比特币钱包
+    bip84_mst = Bip84.FromSeed(seed_bytes, Bip84Coins.BITCOIN)
+    account = bip84_mst.Purpose().Coin().Account(account_index)
+    change = account.Change(Bip84.Change.EXTERNAL)
+
+    addresses = []
+    for i in range(num_addresses):
+        address_index = change.AddressIndex(i)
+        address = address_index.PublicKey().ToAddress()
+        addresses.append(address)
+    return addresses
+
+def generate_ethereum_addresses(seed_bytes, account_index=0, num_addresses=1):
+    # 创建 BIP44 以太坊钱包
+    bip44_mst = Bip44.FromSeed(seed_bytes, Bip44Coins.ETHEREUM)
+    account = bip44_mst.Purpose().Coin().Account(account_index)
+    change = account.Change(Bip44.Change.EXTERNAL)
+
+    addresses = []
+    for i in range(num_addresses):
+        address_index = change.AddressIndex(i)
+        # 获取未压缩的公钥（以太坊使用未压缩格式）
+        public_key = address_index.PublicKey().RawUncompressed().ToHex()[2:]
+        address = "0x" + Web3.keccak(hexstr=public_key).hex()[-40:]
+        addresses.append(address)
+    return addresses
+
+def main():
+    print("欢迎使用多币种钱包！")
+    print("请选择操作：")
+    print("1. 创建新钱包")
+    print("2. 导入现有钱包")
+    choice = input("请输入选项 (1 或 2)：")
+
+    if choice == '1':
+        mnemonic = generate_mnemonic()
+        input("\n请写下你的助记词并按回车键继续...")
+    elif choice == '2':
+        mnemonic = getpass.getpass("请输入你的助记词（用空格分隔）：\n")
+    else:
+        print("无效的选项。程序退出。")
+        sys.exit()
+
+    # 可选：添加密码短语
+    passphrase = getpass.getpass("如果你有设置钱包密码，请输入（没有请直接回车）：")
+
+    # 从助记词生成种子
+    seed_bytes = get_seed_from_mnemonic(mnemonic, passphrase)
+
+    while True:
+        print("\n请选择操作：")
+        print("1. 查看比特币地址")
+        print("2. 查看以太坊地址")
+        print("3. 退出")
+        option = input("请输入选项：")
+
+        if option == '1':
+            account_index = int(input("请输入账户索引 (默认 0)：") or "0")
+            num = int(input("请输入要生成的地址数量："))
+            btc_addresses = generate_bitcoin_addresses(seed_bytes, account_index, num)
+            print(f"\n你的比特币地址（账户 {account_index}）：")
+            for i, addr in enumerate(btc_addresses):
+                print(f"地址索引 {i}: {addr}")
+        elif option == '2':
+            account_index = int(input("请输入账户索引 (默认 0)：") or "0")
+            num = int(input("请输入要生成的地址数量："))
+            eth_addresses = generate_ethereum_addresses(seed_bytes, account_index, num)
+            print(f"\n你的以太坊地址（账户 {account_index}）：")
+            for i, addr in enumerate(eth_addresses):
+                print(f"地址索引 {i}: {addr}")
+        elif option == '3':
+            print("感谢使用，程序退出。")
+            break
+        else:
+            print("无效的选项，请重新选择。")
+
+if __name__ == '__main__':
+    main()
